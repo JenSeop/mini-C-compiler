@@ -1,8 +1,30 @@
-%option noyywrap yylineno
+%option noyywrap nodefault yylineno
+%x COMMENT
 %x IFILE
 
+UCN     (\\u[[0-9a-fA-F]{4}|\\U[0-9a-fA-F]{8}])
+EXP     ([Ee][-+]?[0-9]+)
+ILEN    ([Uu](L|l|LL|ll)?(L|l|LL|ll)[Uu]?)
+
 %{
-    #define LD_PATH /usr/include/
+    struct symbol {
+        struct ref *reflist;
+        char *name;
+    }
+
+    struct ref {
+        struct ref *next;
+        char *filename;
+        int flags;
+        int lineno;
+    }
+
+    #define NHASH 9997
+    struct symbol symtab[NHASH];
+
+    struct symbol *lookup(char*);
+    void addref(int, char*, char*, int);
+
     struct bufstack {
         struct bufstack *prev;  // prev include file pointer
         YY_BUFFER_STATE bs;     // saved buffer, used by flex
@@ -15,6 +37,8 @@
 
     int newfile(char *fn);      // fn is filename, new file loader
     int popfile(void);          // end of include
+
+    int defining;
 %}
 
 %%
